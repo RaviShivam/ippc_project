@@ -1,4 +1,4 @@
-package mcst;
+package rddl.solver.mdp.mcts;
 
 import java.math.BigInteger;
 
@@ -23,6 +23,8 @@ public class mcts_new extends EnumerableStatePolicy{
 	protected final double gamma = 0.85; // discount value
 	protected int TIMEOUT = 160 * TIMEOUT_ORDER; 
 	protected List<HashMap<BigInteger, HashMap<String, Double>>> rewardsPerHorizon = null;
+	protected List<HashMap<BigInteger, HashMap<String, Integer>>> pullsPerHorizon = null;
+	protected List<HashMap<BigInteger, Integer>> visitsPerHorizon = null;
 	// TODO Auto-generated method stub
 	/*
 	 * function mcts(state)
@@ -33,7 +35,7 @@ public class mcts_new extends EnumerableStatePolicy{
 	 * 
 	 * function search(state,depth)
 	 * 	if teminal(state) then return 0
-	 * 	if isleaf(state,d) then return 0
+	 * 	if isleaf(state,d) then return evaluate(state)
 	 * 	action = selectAction(state,depth)
 	 * 	(nextstate,reward) = simulateAction(state,Action)
 	 * 	q = reward+gamma search(nextstate,depth+1)
@@ -89,29 +91,64 @@ public class mcts_new extends EnumerableStatePolicy{
 		if(remainingHorizons==0) return 0.0;
 		BigInteger stateAsNumber = this.getStateLabel(state);
 		if (isLeaf(stateAsNumber, remainingHorizons)) 
-			return 0.0;
-		String action = selectAction(state,remainingHorizons); 
-		Pair<State, Double> result = simulateAction(state, action);
+			return this.evaluate(state);
+		Pair<String,Double> actionnr = selectAction(stateAsNumber,remainingHorizons); 
+		String action = actionnr._o1;
+		Pair<State, Double> result = simulateAction(stateAsNumber, action);
 		State nextstate = result._o1;
 		double reward = result._o2;
 		double q = reward + gamma*search(nextstate,remainingHorizons-1);
-		updateValue(state,action,q,remainingHorizons);
+		updateValue(stateAsNumber,action,q,remainingHorizons);
 		return q;
 	}
 
-	private void updateValue(State state, String action, double q, int remainingHorizons) {
+	private double evaluate(State state) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	private void updateValue(BigInteger state, String action, double q, int remainingHorizons) {
 		// TODO Auto-generated method stub
 		
 	}
 
-	private Pair<State, Double> simulateAction(State state, String action) {
+	private Pair<State, Double> simulateAction(BigInteger state, String action) {
 		// TODO Auto-generated method stub
-		return null;
+		
+		
 	}
 
-	private String selectAction(State state, int remainingHorizons) {
+	private Pair<String,Double> selectAction(BigInteger state, int remainingHorizons) {
 		// TODO Auto-generated method stub
-		return null;
+		String bestAction = null;
+		double bestActionReward = 0;
+		
+		int visitTimes = 0;
+		HashMap<BigInteger,HashMap<String,Double>> reward = this.rewardsPerHorizon.get(remainingHorizons-1);
+		HashMap<BigInteger,Integer> visit = this.visitsPerHorizon.get(remainingHorizons-1);
+		HashMap<BigInteger,HashMap<String,Integer>> pull = this.pullsPerHorizon.get(remainingHorizons-1);
+		//how many times was this node visited?
+		if(visit.containsKey(state))
+			visitTimes = visit.get(state);
+		for(CString action:this.getActions()){
+			String a = action._string;
+			double actionReward = 0;
+			int N = 0;
+			// UCB formular: v_i+ C*sqrt(lnN/n_i) n_i is the number of the times the node has been visited,N
+			//is the total number of times that its parent has been visited
+			if(reward.containsKey(state) && reward.get(state).containsKey(a))
+				actionReward = reward.get(state).get(action);
+			if(pull.containsKey(state) && pull.get(state).containsKey(a))
+				N = pull.get(state).get(action);
+			if(N!=0 && visitTimes!=0)
+				actionReward = actionReward+Math.sqrt(Math.log(N)/visitTimes);
+			if(actionReward>bestActionReward){
+				bestActionReward = actionReward;
+				bestAction = a;
+			}
+		}
+		
+		return new Pair<String,Double>(bestAction,bestActionReward);
 	}
 
 	private boolean isLeaf(BigInteger state, int remainingHorizons) {
