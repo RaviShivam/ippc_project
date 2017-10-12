@@ -1,4 +1,4 @@
-package rddl.solver.mdp.mcts;
+package mcst;
 
 import java.math.BigInteger;
 
