@@ -1,3 +1,9 @@
+package mcts;
+
+import cache_performance.Solver;
+import parser.POMDP;
+import parser.ParsePOMDP;
+
 public class MCTSSolver extends Solver {
     private int TIMEOUT = 2000;
 
