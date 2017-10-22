@@ -15,9 +15,10 @@ public class VI_FeasibleActions extends Solver{
 	public VI_FeasibleActions() {
 		
 	}
-	
+
 	public VI_FeasibleActions(POMDP mdp) {
 		super(mdp);
+		this.solverName = "VI_FeasibleActions";
 	}
 	
 	public void Solve() {
@@ -45,9 +46,9 @@ public class VI_FeasibleActions extends Solver{
 			}
 			saveCurrentQMatrix();
 		}
-		mu.recordMemoryUsuage();
-		//printQTable();
-		System.out.format("The amount of cycles was: %d%n", count);
+//		mu.recordMemoryUsuage();
+//		//printQTable();
+//		System.out.format("The amount of cycles was: %d%n", count);
 	}
 	
 	

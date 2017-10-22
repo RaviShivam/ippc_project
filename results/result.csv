@@ -1,0 +1,13 @@
+solver; problem; memory (MB); time (s)
+Value Iteration; hallway; 10.535; 0.0480
+VI_FeasibleActions; hallway; 10.578; 0.0230
+VI_CachePerformance; hallway; 10.578; 0.0760
+Value Iteration; hallway2; 10.578; 0.1010
+VI_FeasibleActions; hallway2; 10.578; 0.0290
+VI_CachePerformance; hallway2; 10.578; 0.0580
+Value Iteration; saci-s12-a6-z5.95; 10.578; 0.0010
+VI_FeasibleActions; saci-s12-a6-z5.95; 10.578; 0.0000
+VI_CachePerformance; saci-s12-a6-z5.95; 12.203; 0.0000
+Value Iteration; saci-s100-a10-z31; 10.579; 0.0050
+VI_FeasibleActions; saci-s100-a10-z31; 10.579; 0.0040
+VI_CachePerformance; saci-s100-a10-z31; 10.579; 0.0080
