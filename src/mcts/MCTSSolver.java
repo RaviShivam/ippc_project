@@ -26,8 +26,8 @@ public class MCTSSolver extends Solver {
             elapsed_time = System.currentTimeMillis() - start;
             simround++;
             System.out.println(simround);
-        } while (true);
-//        } while (elapsed_time < this.TIMEOUT);
+//        } while (true);
+        } while (elapsed_time < this.TIMEOUT);
     }
 
     public static void main(String[] args) {

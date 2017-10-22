@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class MCTSNode {
     MCTSNode[] children;
-    double nVisits, totValue,q;
+    double nVisits, totValue,q = 0;
     POMDP mdp = null;
     private Random r = new Random();
     private int numberOfActions = 0;
@@ -30,13 +30,19 @@ public class MCTSNode {
             this.q = mdp.getReward(this.stateLabel, action);
             return;
         }
+        // Go deeper in to the tree.
         Pair<Integer, MCTSNode> selection = this.select();
         int bestAction = selection.getKey();
         MCTSNode bestNode = selection.getValue();
         bestNode.simulateRound();
 
+        // Update current values.
         double immediateReward = this.mdp.getReward(this.stateLabel, bestAction);
-        this.totValue = (this.totValue*this.nVisits + bestNode.nVisits*bestNode.q)/(this.nVisits+1);
+        this.totValue = 0;
+        for (MCTSNode node : this.children) {
+            totValue += node.nVisits*node.totValue;
+        }
+        totValue = totValue/(this.nVisits+epsilon);
         this.q = immediateReward + this.totValue/(this.nVisits+epsilon);
         this.nVisits++;
     }
@@ -51,8 +57,7 @@ public class MCTSNode {
         double bestValue = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < numberOfActions; i++) {
             MCTSNode c = this.randomTransition(i);
-            if (c == null) continue;
-            double uctValue = c.q + Math.sqrt(2*Math.log(nVisits + 1) / (c.nVisits + epsilon));
+            double uctValue = c.q + Math.sqrt(2*Math.log(nVisits + 1) / (c.nVisits + epsilon)) + r.nextDouble()*epsilon;
             if (uctValue > bestValue) {
                 selected = c;
                 action = i;
@@ -70,7 +75,6 @@ public class MCTSNode {
                 possibleStates.add(nState);
             }
         }
-        if (possibleStates.size() == 0) return null;
         int index = possibleStates.get(r.nextInt(possibleStates.size())); // Get a random state from transition table
         return this.children[index];
     }
