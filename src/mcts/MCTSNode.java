@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class MCTSNode {
     MCTSNode[] children;
-    double nVisits, totValue;
+    double nVisits, totValue,q;
     POMDP mdp = null;
     private Random r = new Random();
     private int numberOfActions = 0;
@@ -27,7 +27,7 @@ public class MCTSNode {
             this.expand();
             int action = this.select().getKey();
             this.nVisits++;
-            this.totValue = mdp.getReward(this.stateLabel, action);
+            this.q = mdp.getReward(this.stateLabel, action);
             return;
         }
         Pair<Integer, MCTSNode> selection = this.select();
@@ -36,7 +36,8 @@ public class MCTSNode {
         bestNode.simulateRound();
 
         double immediateReward = this.mdp.getReward(this.stateLabel, bestAction);
-        this.totValue = immediateReward + mdp.getDiscountFactor()*bestNode.totValue;
+        this.totValue = (this.totValue*this.nVisits + bestNode.nVisits*bestNode.q)/(this.nVisits+1);
+        this.q = immediateReward + this.totValue/(this.nVisits+epsilon);
         this.nVisits++;
     }
 
@@ -51,8 +52,7 @@ public class MCTSNode {
         for (int i = 0; i < numberOfActions; i++) {
             MCTSNode c = this.randomTransition(i);
             if (c == null) continue;
-            double uctValue = c.totValue / (c.nVisits + epsilon) +
-                    Math.sqrt(2*Math.log(nVisits + 1) / (c.nVisits + epsilon));
+            double uctValue = c.q + Math.sqrt(2*Math.log(nVisits + 1) / (c.nVisits + epsilon));
             if (uctValue > bestValue) {
                 selected = c;
                 action = i;
