@@ -125,7 +125,7 @@ public class VI_trial extends Solver{
 		return delta;
 	}
 	
-	private void initializeQTable() {
+	public void initializeQTable() {
 		this.qTable = new double[this.mdp.getNumStates()][this.mdp.getNumActions()];
 		this.qTablePrev = new double[this.mdp.getNumStates()][this.mdp.getNumActions()];
 	}

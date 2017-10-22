@@ -12,11 +12,11 @@ public class VI_CachePerformance extends Solver {
 	//Need to split up priorityList into paritions somehow.
 	
 	public VI_CachePerformance() {
-		
 	}
 	
 	public VI_CachePerformance(POMDP mdp) {
 		super(mdp);
+		this.solverName = "VI_CachePerformance";
 	}
 	
 	public void clear() {
@@ -46,9 +46,9 @@ public class VI_CachePerformance extends Solver {
 			saveCurrentQMatrix();
 			prioritizeList();
 		}
-		mu.recordMemoryUsuage();
-		//printQTable();
-		System.out.format("The amount of cycles was: %d%n", count);
+//		mu.recordMemoryUsuage();
+//		//printQTable();
+//		System.out.format("The amount of cycles was: %d%n", count);
 	}
 	
 	private double calculateQMatrix(POMDP mdp) {

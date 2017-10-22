@@ -1,17 +1,20 @@
 package benchmark;
-import parser.*;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import cache_performance.*;
+import parser.POMDP;
+import parser.ParsePOMDP;
 
 public class Benchmark {
 	
-	public ArrayList<POMDP> testProblems;
-	
+	private ArrayList<POMDP> testProblems;
+
+	private PrintWriter writer;
+
 	private void loadPOMDP() {
 		this.testProblems = new ArrayList<POMDP>();
 		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway.POMDP"));
@@ -21,34 +24,37 @@ public class Benchmark {
 		
 	}
 	
-	public POMDP getMDP(int i) {
-		return this.testProblems.get(i);
+	public void benchmark(Solver solver) {
+		Metrics metrics = new Metrics(solver);
+		metrics.tic();
+		solver.Solve();
+		metrics.toc(this.writer);
 	}
-	
-	public static void main(String[] args) {
+
+	private void initPrintWriter(String fileName) throws IOException {
+		writer = new PrintWriter(new FileWriter(fileName));
+		writer.println("solver; problem; memory (MB); time (s)");
+	}
+
+	private void closePrintWriter() {
+		this.writer.flush();
+		this.writer.close();
+	}
+
+	public ArrayList<POMDP> getTestProblems() {
+		return testProblems;
+	}
+
+	public static void main(String[] args) throws IOException {
 		Benchmark benchmark = new Benchmark();
-		
 		benchmark.loadPOMDP();
-			
-	    VI vi = new VI();
-	    VI_FeasibleActions vi_FA = new VI_FeasibleActions();
-	    VI_CachePerformance vi_cache = new VI_CachePerformance();
-	    
-	    MemoryUsuage mu = MemoryUsuage.getInstance();
-	    mu.recordMemoryUsuage();
-	    
-	    for(int i = 0; i < benchmark.testProblems.size(); i++) {
-	    	vi.addMDP(benchmark.getMDP(i));
-	    	vi_FA.addMDP(benchmark.getMDP(i));
-	    	vi_cache.addMDP(benchmark.getMDP(i));
-	    	vi.Solve();
-	    	vi_FA.Solve();
-	    	vi_cache.Solve();
-	    	vi_cache.clear();
-	    }
-	    
+		benchmark.initPrintWriter("results/result.csv");
+		for (POMDP problem : benchmark.getTestProblems()) {
+//			benchmark.benchmark(new MCTSSolver(problem));
+			benchmark.benchmark(new VI(problem));
+			benchmark.benchmark(new VI_FeasibleActions(problem));
+			benchmark.benchmark(new VI_CachePerformance(problem));
+		}
+		benchmark.closePrintWriter();
     }
-	
-
-
 }

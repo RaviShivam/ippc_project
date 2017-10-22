@@ -2,7 +2,6 @@ package benchmark;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 
 /**
@@ -10,16 +9,16 @@ import java.util.ArrayList;
  * @author yuupv
  *
  */
-public class MemoryUsuage {
+public class MemoryUsage {
 	
 	private ArrayList<Integer> numbers = new ArrayList<Integer>();
 	
-	private static MemoryUsuage mu = new MemoryUsuage();
+	private static MemoryUsage mu = new MemoryUsage();
 	
 	private MemoryMXBean memoryMxBean;
-	private MemoryUsage memUsage;
+	private java.lang.management.MemoryUsage memUsage;
 	
-	private MemoryUsuage() {
+	private MemoryUsage() {
 		this.memoryMxBean = ManagementFactory.getMemoryMXBean();
 		this.memUsage = memoryMxBean.getHeapMemoryUsage();
 	}
@@ -27,7 +26,7 @@ public class MemoryUsuage {
 
 
 	
-	public static MemoryUsuage getInstance() {
+	public static MemoryUsage getInstance() {
 		return mu;
 	}
 	

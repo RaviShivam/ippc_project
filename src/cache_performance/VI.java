@@ -9,6 +9,7 @@ public class VI extends Solver {
 	
 	public VI(POMDP mdp) {
 		super(mdp);
+		this.solverName = "Value Iteration";
 	}
 	
 	public void Solve() {
@@ -36,8 +37,8 @@ public class VI extends Solver {
 			
 		}
 		//printQTable();
-		mu.recordMemoryUsuage();
-		System.out.format("The amount of cycles was: %d%n", count);
+//		mu.recordMemoryUsuage();
+//		System.out.format("The amount of cycles was: %d%n", count);
 	}
 	
 	private double getMaxQTablePrev(int s) {

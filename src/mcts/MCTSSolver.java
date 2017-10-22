@@ -16,7 +16,7 @@ public class MCTSSolver extends Solver {
         this.TIMEOUT = TIMEOUT;
     }
 
-    public void solve(){
+    public void Solve(){
         MCTSNode root = new MCTSNode(this.mdp, mdp.getInitialState());
         int simround = 0;
         long start = System.currentTimeMillis();
@@ -32,6 +32,6 @@ public class MCTSSolver extends Solver {
 
     public static void main(String[] args) {
         MCTSSolver mctsSolver = new MCTSSolver(ParsePOMDP.readPOMDP("domains/tiger.aaai.POMDP"));
-        mctsSolver.solve();
+        mctsSolver.Solve();
     }
 }
