@@ -43,7 +43,7 @@ public class MCTSNode {
             totValue += node.nVisits*node.totValue;
         }
         totValue = totValue/(this.nVisits+epsilon);
-        this.q = immediateReward + this.totValue/(this.nVisits+epsilon);
+        this.q = immediateReward + bestNode.totValue/(this.nVisits+epsilon);
         this.nVisits++;
     }
 

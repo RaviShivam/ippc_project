@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import cache_performance.*;
+import mcts.MCTSSolver;
 import parser.POMDP;
 import parser.ParsePOMDP;
 
@@ -50,7 +51,7 @@ public class Benchmark {
 		benchmark.loadPOMDP();
 		benchmark.initPrintWriter("results/result.csv");
 		for (POMDP problem : benchmark.getTestProblems()) {
-//			benchmark.benchmark(new MCTSSolver(problem));
+			benchmark.benchmark(new MCTSSolver(problem));
 			benchmark.benchmark(new VI(problem));
 			benchmark.benchmark(new VI_FeasibleActions(problem));
 			benchmark.benchmark(new VI_CachePerformance(problem));
