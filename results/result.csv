@@ -1,17 +1,5 @@
 solver; problem; memory (MB); time (s)
-MCTS Solver; hallway; 4.984; 0.5180
-Value Iteration; hallway; 8.261; 0.0200
-VI_FeasibleActions; hallway; 7.340; 0.0100
-VI_CachePerformance; hallway; 7.340; 0.0400
-MCTS Solver; hallway2; 7.341; 0.5000
-Value Iteration; hallway2; 8.222; 0.0300
-VI_FeasibleActions; hallway2; 9.329; 0.0100
-VI_CachePerformance; hallway2; 8.222; 0.0300
-MCTS Solver; saci-s12-a6-z5.95; 8.222; 0.5000
-Value Iteration; saci-s12-a6-z5.95; 10.533; 0.0000
-VI_FeasibleActions; saci-s12-a6-z5.95; 10.533; 0.0000
-VI_CachePerformance; saci-s12-a6-z5.95; 10.533; 0.0000
-MCTS Solver; saci-s100-a10-z31; 10.533; 0.5000
-Value Iteration; saci-s100-a10-z31; 12.043; 0.0000
-VI_FeasibleActions; saci-s100-a10-z31; 12.043; 0.0000
-VI_CachePerformance; saci-s100-a10-z31; 12.043; 0.0100
+VI_FeasibleActions; hallway; 4.476; 0.0000
+VI_FeasibleActions; hallway2; 4.518; 0.0000
+VI_FeasibleActions; saci-s12-a6-z5.95; 4.518; 0.0000
+VI_FeasibleActions; saci-s100-a10-z31; 4.518; 0.0000
