@@ -51,10 +51,10 @@ public class Benchmark {
 		benchmark.loadPOMDP();
 		benchmark.initPrintWriter("results/result.csv");
 		for (POMDP problem : benchmark.getTestProblems()) {
-			benchmark.benchmark(new MCTSSolver(problem));
-			benchmark.benchmark(new VI(problem));
-			benchmark.benchmark(new VI_FeasibleActions(problem));
-			benchmark.benchmark(new VI_CachePerformance(problem));
+			//benchmark.benchmark(new MCTSSolver(problem));
+			benchmark.benchmark(new VI_PP(problem));
+			//benchmark.benchmark(new VI_FeasibleActions(problem));
+			//benchmark.benchmark(new VI_CachePerformance(problem));
 		}
 		benchmark.closePrintWriter();
     }
