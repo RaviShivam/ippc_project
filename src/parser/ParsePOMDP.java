@@ -107,7 +107,7 @@ public class ParsePOMDP {
 
 		for(int a=0; a<nActions; a++) {
 			try {
-				actionLabels.put(a, pomdp.getActionString(a));
+				actionLabels.put(a, pomdp.getActionString(a%action)+pomdp.getActionString((int)a/action));
 			}
 			catch (NullPointerException e) {
 				actionLabels.put(a, a+"");
