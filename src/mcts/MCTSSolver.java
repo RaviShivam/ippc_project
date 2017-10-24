@@ -5,7 +5,8 @@ import parser.POMDP;
 import parser.ParsePOMDP;
 
 public class MCTSSolver extends Solver {
-    private int TIMEOUT = 500;
+    private int TIMEOUT = 1000;
+    private int horizon = 150;
 
     public MCTSSolver(POMDP mdp) {
         super(mdp);
@@ -19,19 +20,17 @@ public class MCTSSolver extends Solver {
 
     public void Solve(){
         MCTSNode root = new MCTSNode(this.mdp, mdp.getInitialState());
-        int simround = 0;
         long start = System.currentTimeMillis();
         long elapsed_time;
         do {
-            root.simulateRound();
+            root.simulateRound(this.horizon);
             elapsed_time = System.currentTimeMillis() - start;
-            simround++;
 //        } while (true);
         } while (elapsed_time < this.TIMEOUT);
     }
 
-//    public static void main(String[] args) {
-//        MCTSSolver mctsSolver = new MCTSSolver(ParsePOMDP.readPOMDP("domains/tiger.aaai.POMDP"));
-//        mctsSolver.Solve();
-//    }
+    public static void main(String[] args) {
+        MCTSSolver mctsSolver = new MCTSSolver(ParsePOMDP.readPOMDP("domains/tiger.aaai.POMDP"));
+        mctsSolver.Solve();
+    }
 }
