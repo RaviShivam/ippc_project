@@ -2,12 +2,15 @@ package cache_performance;
 
 import parser.POMDP;
 
+
 import java.util.ArrayList;
 
 public class VI_PP extends Solver {
     private double[]   vt;
-    private ArrayList<ArrayList<ArrayList<Integer>>> actionList;
     private ArrayList<ArrayList<Integer>> H;
+    private ArrayList<Partition> partitions;
+
+    private int solveP;
 
     //TODO:
     //Make possible action list
@@ -23,12 +26,16 @@ public class VI_PP extends Solver {
         this.solverName = "VI_FeasibleActions";
     }
 
-
-
-
     public void Solve() {
         IntializeProblem();
 
+
+    }
+
+    public void solvePartition() {
+        for (int i = 0; i < this.partitions.get(this.solveP).getPartition().size(); i++) {
+
+        }
     }
 
 
@@ -44,8 +51,6 @@ public class VI_PP extends Solver {
         //System.out.println("Value going into Qmatrix: " + value);
         return value;
     }
-
-
 
     private double getMaxQTablePrev(int s) {
         double max = 0;
@@ -91,8 +96,17 @@ public class VI_PP extends Solver {
     public void IntializeProblem(){
         initializeQTable();
         initializeH();
-        this.actionList = sortFeasibleActions(this.mdp);
-        System.out.println("Size of actionList: " + getTotalFeasibleActions());
+        this.partitions = createPartition();
+        initializePDP();
+
+        for (int i = 0; i <this.partitions.size() ; i++) {
+            this.partitions.get(i).initializePriorityPartitions(this.partitions.size());
+        }
+
+        findMaxPriority();
+
+        //System.out.println("Size of actionList: " + this.feasibleActions.getTotalFeasibleActions());
+        //System.out.println("Size of actions possible: " + this.feasibleActions.getAllActions(0).getAmountOfActions());
     }
 
     public void initializeH() {
@@ -120,35 +134,69 @@ public class VI_PP extends Solver {
     //TODO:
     // Make a couple of functions to make it easier to get values from the arrayarrayarraylist
     // Need to make this much clearer
-    private ArrayList<ArrayList<ArrayList<Integer>>> sortFeasibleActions(POMDP mdp) {
+    private ArrayList<Transition> sortFeasibleActions() {
         int s, a, sNext;
-        ArrayList<ArrayList<ArrayList<Integer>>> actionList = new ArrayList<ArrayList<ArrayList<Integer>>>();
-        for(s = 0; s < mdp.getNumStates(); s++) {
-            ArrayList<ArrayList<Integer>> possibleActions = new ArrayList<ArrayList<Integer>>();
-            for(a = 0; a < mdp.getNumActions(); a++) {
-                ArrayList<Integer> possibleSNext = new ArrayList<Integer>();
-                for(sNext = 0; sNext < mdp.getNumStates(); sNext++) {
-                    if(mdp.getTransitionProbability(s, a, sNext) > 0) {
-                        //System.out.println("statepossibility list: " + mdp.getTransitionProbability(s, a, sNext) + " s: " + s + " sNext: " + sNext);
-                        possibleSNext.add(sNext);
+        ArrayList<Transition> feasibleActions = new ArrayList<Transition>();
+        for(s = 0; s < this.mdp.getNumStates(); s++) {
+            ArrayList<Actions> tempList = new ArrayList<>();
+
+            for(a = 0; a < this.mdp.getNumActions(); a++) {
+                ArrayList<Integer> temp = new ArrayList<>();
+                for (sNext = 0; sNext < this.mdp.getNumStates(); sNext++) {
+                    if(this.mdp.getTransitionProbability(s,a, sNext) > 0){
+                        temp.add(sNext);
                     }
                 }
-                possibleActions.add(possibleSNext);
+                tempList.add(new Actions(a, temp));
+
+
             }
-            actionList.add(possibleActions);
+            Transition tran = new Transition(s, tempList);
+            tempList.clear();
+            feasibleActions.add(tran);
         }
-        return actionList;
+        return feasibleActions;
     }
 
-    private int getTotalFeasibleActions() {
-        int s, a;
-        int count = 0;
-        for(s = 0; s < this.actionList.size(); s++) {
-            for(a = 0; a < this.actionList.get(s).size(); a++) {
-                count = count + this.actionList.get(s).get(a).size();
-            }
+    //
+    //
+    //
+    //
+    //
+    //
+    private ArrayList<Partition> createPartition() {
+        int partitionAmount = 10;
+        ArrayList<Transition> fa = sortFeasibleActions();
+        int iterationAmount = fa.size();
+        System.out.println("Size of Transition table : " + iterationAmount);
+        double partitionSize = (double) iterationAmount/partitionAmount;
+        int minPartitionSize = (int) partitionSize;
+        int leftOvers    = (int) Math.round( (double) (partitionSize - minPartitionSize)*partitionAmount);
+
+
+        if(leftOvers + minPartitionSize*partitionAmount != iterationAmount) {
+            System.out.println("Parition size is not correct. Something went wrong creating paritions");
+            System.exit(0);
         }
-        return count;
+
+        ArrayList<Partition> partitions = new ArrayList<>();
+        for (int i = 0; i < partitionAmount; i++) {
+            ArrayList<Transition> tempPart = new ArrayList<>();
+
+            for (int j = 0; j < minPartitionSize; j++) {
+                tempPart.add(fa.get(j + i*minPartitionSize));
+                //System.out.println(fa.get(j*i) + " get this: " + (j + i*minPartitionSize));
+            }
+            Partition tempP = new Partition(tempPart, i);
+            partitions.add(tempP);
+            tempPart.clear();
+        }
+
+        for (int i = 0; i < leftOvers; i++) {
+            partitions.get(partitions.size()-1).addToParitionList(fa.get(minPartitionSize + i));
+        }
+
+        return partitions;
     }
 
     private double getValueH(int i){
@@ -158,6 +206,26 @@ public class VI_PP extends Solver {
     private void initializeVt() {
         this.vt = new double[this.mdp.getNumStates()];
     }
+
+    //PDP = Partition dependents of a Partition
+    private void initializePDP(){
+        for (int i = 0; i < this.partitions.size() ; i++) {
+            for (int j = 0; j <this.partitions.size() ; j++) {
+                this.partitions.get(i).comparePartitions(this.partitions.get(j));
+            }
+        }
+    }
+
+    private void findMaxPriority() {
+        double max = 0;
+        for (int i = 0; i < this.partitions.size() ; i++) {
+            if(max < this.partitions.get(i).getPrioirty()) {
+                max = this.partitions.get(i).getPrioirty();
+                solveP = i;
+            }
+        }
+    }
+
 }
 
 
@@ -196,4 +264,11 @@ public class VI_PP extends Solver {
  //		mu.recordMemoryUsuage();
  //		//printQTable();
  //		System.out.format("The amount of cycles was: %d%n", count);
+
+ System.out.println("PDP0: " + this.partitions.get(0).PDP.toString() + " statelist: " + this.partitions.get(0).getStatesList().toString() + "Partition size: " + this.partitions.get(0).partition.size() );
+ System.out.println("PDP1: " + this.partitions.get(1).PDP.toString() + " statelist: " + this.partitions.get(1).getStatesList().toString() + "Partition size: " + this.partitions.get(1).partition.size());
+ System.out.println("PDP2: " + this.partitions.get(2).PDP.toString() + " statelist: " + this.partitions.get(2).getStatesList().toString() + "Partition size: " + this.partitions.get(2).partition.size());
+ System.out.println("PDP3: " + this.partitions.get(3).PDP.toString() + " statelist: " + this.partitions.get(3).getStatesList().toString() + "Partition size: " + this.partitions.get(3).partition.size());
+ System.out.println("PDP4: " + this.partitions.get(4).PDP.toString() + " statelist: " + this.partitions.get(4).getStatesList().toString() + "Partition size: " + this.partitions.get(4).partition.size());
+ System.out.println("PDP5: " + this.partitions.get(5).PDP.toString() + " statelist: " + this.partitions.get(5).getStatesList().toString() + "Partition size: " + this.partitions.get(5).partition.size());
  */
