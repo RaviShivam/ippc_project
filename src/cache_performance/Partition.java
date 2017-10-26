@@ -1,5 +1,7 @@
 package cache_performance;
 
+import parser.POMDP;
+
 import java.util.ArrayList;
 
 /**
@@ -32,12 +34,20 @@ public class Partition {
         updateStatesList();
     }
 
-    public void initializePriorityPartitions(int NumberOfPartitions) {
-        this.priorityPartitions = new ArrayList<>();
-        for (int i = 0; i < NumberOfPartitions ; i++) {
-            this.priorityPartitions.add(0);
+    public void initializePriorityPartitions(POMDP mdp) {
+        double maxReward = 0;
+
+        for (int i = 0; i < this.partition.size(); i++) {
+            for (int j = 0; j < this.partition.get(i).getActionList().size() ; j++) {
+                //System.out.println("Max reward: " + mdp.getReward(this.partition.get(i).getState(), this.partition.get(i).getAction(j).getActionNum()));
+                if(maxReward < mdp.getReward(this.partition.get(i).getState(), this.partition.get(i).getAction(j).getActionNum())) {
+                    //System.out.println("Max reward: " + maxReward);
+                    maxReward = mdp.getReward(this.partition.get(i).getState(), this.partition.get(i).getAction(j).getActionNum());
+                }
+            }
+
         }
-        this.priorityPartitions.set(this.getID(), -1);
+        this.maxH = maxReward;
     }
 
     public void comparePartitions(Partition comP) {
@@ -54,6 +64,7 @@ public class Partition {
                 }
             }
         }
+
         // Does nState exist in other Partition
         //for (int i = 0; i < this.sNextList.size() ; i++) {
         //    for (int j = 0; j < comP.getStatesList().size() ; j++) {
@@ -161,10 +172,14 @@ public class Partition {
     }
 
     public double getPrioirty() {
-        return prioirty;
+        return this.maxH;
     }
 
     public ArrayList<Transition> getPartition() {
         return partition;
+    }
+
+    public String toString() {
+        return this.partition.get(0).toString();
     }
 }

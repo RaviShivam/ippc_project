@@ -24,7 +24,11 @@ public class Transition {
         return this.state;
     }
 
-    public ArrayList<Actions> getAction() {
+    public Actions getAction(int i) {
+        return this.actions.get(i);
+    }
+
+    public ArrayList<Actions> getActionList() {
         return this.actions;
     }
 
@@ -38,7 +42,7 @@ public class Transition {
     //}
 
     public String toString() {
-        String temp = "[" + this.state + " , " + this.actions.toString() + "]\n";
+        String temp = "[" + this.state + " , " + this.actions.size() + "]\n";
         return temp;
     }
 

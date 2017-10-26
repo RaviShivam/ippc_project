@@ -44,7 +44,7 @@ public class VI_FeasibleActions extends Solver{
 					delta = getDelta(delta, s, a);
 				}
 			}
-			saveCurrentQMatrix();
+
 		}
 //		mu.recordMemoryUsuage();
 //		//printQTable();
