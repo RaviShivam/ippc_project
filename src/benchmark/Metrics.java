@@ -32,7 +32,7 @@ public class Metrics {
     }
 
     public void toc(PrintWriter writer) {
-        double memoryUsage = bytesToMegabytes(this.initialMemory - (runTime.totalMemory()-runTime.totalMemory()));
+        double memoryUsage = bytesToMegabytes(-this.initialMemory + (runTime.totalMemory()-runTime.freeMemory()));
         double timeConsumption = (System.currentTimeMillis() - this.initialTime)/SECOND;
         System.out.printf("Memory consumption: %.3f MB", memoryUsage);
         System.out.println();
@@ -40,7 +40,7 @@ public class Metrics {
         System.out.println();
         System.out.println("====== Benchmark complete =======");
         System.out.println();
-        writer.printf("%s; %s; %.3f; %.4f", solver.getSolverName(), solver.getProblemName(), memoryUsage, timeConsumption);
+        writer.printf("%s, %s, %.3f, %.4f", solver.getSolverName(), solver.getProblemName(), memoryUsage, timeConsumption);
         writer.println();
         runTime.gc();
     }

@@ -75,7 +75,7 @@ public class ParsePOMDP {
 		System.out.println("File: "+filePath);
 
 		Pomdp pomdp = FileParser.loadPomdp(filePath, 0);
-		int enlarger = 2;
+		int enlarger = 3;
 		int state = pomdp.nrStates();
 		int action = pomdp.nrActions();
 		int nStates = (int)Math.pow(pomdp.nrStates(),enlarger);

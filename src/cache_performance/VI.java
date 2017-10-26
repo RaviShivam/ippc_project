@@ -1,8 +1,14 @@
 package cache_performance;
+import benchmark.Metrics;
 import parser.*;
 
 public class VI extends Solver {
-	
+	private static final long MEGABYTE = 1024L * 1024L;
+
+	public static long bytesToMegabytes(long bytes) {
+		return bytes / MEGABYTE;
+	}
+
 	public VI() {
 		
 	}
@@ -14,6 +20,11 @@ public class VI extends Solver {
 	
 	public void Solve() {
 		initializeQTable();
+		Runtime runtime = Runtime.getRuntime();
+
+		long memory = runtime.totalMemory() - runtime.freeMemory();
+		System.out.println("Used memory is megabytes: "
+				+ bytesToMegabytes(memory));
 		// Make assert that discount factor has to be between 0-1
 		int sNext,s,a;
 		double sum;
@@ -25,7 +36,7 @@ public class VI extends Solver {
 			for(s = 0; s < this.mdp.getNumStates(); s++) {
 				for(a = 0; a < this.mdp.getNumActions(); a++) {
 					sum = 0.0;
-					
+
 					for(sNext = 0; sNext < this.mdp.getNumStates(); sNext++) {
 						sum = sum + this.mdp.getTransitionProbability(s, a, sNext)*getMaxQTablePrev(sNext);
 					}
@@ -34,7 +45,7 @@ public class VI extends Solver {
 				}
 			}
 			saveCurrentQMatrix();
-			
+
 		}
 		//printQTable();
 //		mu.recordMemoryUsuage();
