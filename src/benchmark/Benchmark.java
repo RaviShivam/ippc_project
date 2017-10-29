@@ -20,8 +20,8 @@ public class Benchmark {
 		this.testProblems = new ArrayList<POMDP>();
 //		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway.POMDP"));
 //		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway2.POMDP"));
-//		this.testProblems.add(ParsePOMDP.LargeMDP("domains/saci-s12-a6-z5.95.POMDP"));
-		this.testProblems.add(ParsePOMDP.readPOMDP("domains/saci-s100-a10-z31.POMDP"));
+//		this.testProblems.add(ParsePOMDP.LargeMDP("domains/aircraft.POMDP"));
+		this.testProblems.add(ParsePOMDP.readPOMDP("domains/aircraft2.POMDP"));
 		
 	}
 	
