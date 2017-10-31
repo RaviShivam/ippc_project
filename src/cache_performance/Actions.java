@@ -37,7 +37,7 @@ public class Actions {
     }
 
     public String toString(){
-        return this.actionNum + ", Yuuo " + this.sNext.size();
+        return this.actionNum + ", " + this.sNext.size();
     }
 
 }

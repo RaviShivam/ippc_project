@@ -1,5 +1,2 @@
 solver; problem; memory (MB); time (s)
-VI_FeasibleActions; hallway; 4.193; 0.0240
-VI_FeasibleActions; hallway2; 4.239; 0.0190
-VI_FeasibleActions; saci-s12-a6-z5.95; 4.239; 0.0010
-VI_FeasibleActions; saci-s100-a10-z31; 4.239; 0.0200
+VI_FeasibleActions; hallway; 5.982; 0.0410

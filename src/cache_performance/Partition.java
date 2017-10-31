@@ -9,14 +9,14 @@ import java.util.ArrayList;
  */
 public class Partition {
 
-    private ArrayList<Transition> partition;
-    public ArrayList<Integer> PDP = new ArrayList<>();
+    public ArrayList<Transition> partition;
+    public ArrayList<PDP> PDP = new ArrayList<>();
+    public ArrayList<Double> HPP = new ArrayList<>();
     private ArrayList<Integer> statesList = new ArrayList<>();
-    //private ArrayList<Integer> sNextList = new ArrayList<>();
     private ArrayList<Integer> priorityPartitions;
 
     private int id;
-    private double prioirty = 0;
+    //private double prioirty = 0;
     private double maxH = 0;
 
 
@@ -39,7 +39,6 @@ public class Partition {
 
         for (int i = 0; i < this.partition.size(); i++) {
             for (int j = 0; j < this.partition.get(i).getActionList().size() ; j++) {
-                //System.out.println("Max reward: " + mdp.getReward(this.partition.get(i).getState(), this.partition.get(i).getAction(j).getActionNum()));
                 if(maxReward < mdp.getReward(this.partition.get(i).getState(), this.partition.get(i).getAction(j).getActionNum())) {
                     //System.out.println("Max reward: " + maxReward);
                     maxReward = mdp.getReward(this.partition.get(i).getState(), this.partition.get(i).getAction(j).getActionNum());
@@ -55,53 +54,95 @@ public class Partition {
             return;
         }
 
+        ArrayList<Integer> sNextList = new ArrayList<>();
+
         boolean isSet = false;
         // Do partitions share states?
-        for (int i = 0; i < this.statesList.size() ; i++) {
-            for (int j = 0; j < comP.getStatesList().size() ; j++) {
-                if(this.statesList.get(i) == comP.getStatesList().get(j)) {
-                    isSet = true;
-                }
-            }
-        }
-
-        // Does nState exist in other Partition
-        //for (int i = 0; i < this.sNextList.size() ; i++) {
+        //for (int i = 0; i < this.statesList.size() ; i++) {
         //    for (int j = 0; j < comP.getStatesList().size() ; j++) {
-        //        if(this.sNextList.get(i) == comP.getStatesList().get(j)) {
+        //        if(this.statesList.get(i) == comP.getStatesList().get(j)) {
+        //            sNextList.add(this.statesList.get(i));
         //            isSet = true;
         //        }
         //    }
         //}
 
-        if(isSet) { this.PDP.add(comP.getID());}
+        // Does nState exist in other Partition
+
+        //For every element in the partition
+        for (int i = 0; i < this.partition.size(); i++) {
+            //For every action in this partition
+            for (int j = 0; j < this.partition.get(i).getActionList().size() ; j++) {
+                // For every sNext in this partition
+                for (int k = 0; k < this.partition.get(i).getAction(j).getSizesNext(); k++) {
+                    for (int l = 0; l < comP.getStatesList().size(); l++) {
+                        if(this.partition.get(i).getAction(j).getsNext().get(k) == comP.getStatesList().get(l)) {
+                            sNextList.add(comP.getStatesList().get(l));
+                            isSet = true;
+                        }
+                    }
+                }
+
+            }
+        }
+
+        //reduce sNext
+        ArrayList<Integer> temp = new ArrayList<>();
+        for (int i = 0; i < sNextList.size(); i++) {
+            if(temp.size() == 0) {
+                temp.add(sNextList.get(i));
+            } else {
+                boolean same = false;
+                for (int j = 0; j < temp.size(); j++) {
+                    if(temp.get(j) == sNextList.get(i)) {
+                        same = true;
+                    }
+                }
+                if(!same) {
+                    temp.add(sNextList.get(i));
+                }
+            }
+
+        }
+
+
+        if(isSet) { this.PDP.add(new PDP(comP.getID(), temp));}
 
     }
 
-    public void addPDP(int id){
-        boolean exist = false;
-        if(this.PDP.size() > 0) {
-            this.PDP.add(id);
-        } else {
-            for (int i = 0; i < this.PDP.size(); i++) {
-                if(this.PDP.get(i) == id) {
-                    exist = true;
-                }
+    public void initializeHPP(int size) {
+        for (int i = 0; i < size ; i++) {
+            this.HPP.add((double)0);
+        }
+        this.HPP.set(this.getID(), (double) -1);
+    }
+
+    public void setHPP(int partition, double val) {
+        this.HPP.set(partition, val);
+    }
+
+    public void findMaxHP() {
+        double max = 0;
+        for (int i = 0; i < this.HPP.size() ; i++) {
+            if(max < this.HPP.get(i)) {
+                max = this.HPP.get(i);
             }
         }
-        if (!exist) {
-            this.PDP.add(id);
-        }
+        this.maxH = max;
     }
 
     private void findMaxReward() {
-        double reward = this.prioirty;
+        double reward = this.maxH;
         for (int i = 0; i <this.partition.size(); i++) {
             if(reward < this.partition.get(i).getReward()) {
                 reward = this.partition.get(i).getReward();
             }
         }
-        this.prioirty = reward;
+        this.maxH = reward;
+    }
+
+    public void setmaxH(double num) {
+        this.maxH = num;
     }
 
     public void addToParitionList(Transition trans) {
@@ -135,25 +176,6 @@ public class Partition {
         }
     }
 
-    /*
-    private void addsNextToList(int state) {
-
-        boolean inState = false;
-
-        if(this.sNextList.size() > 0) {
-            for (int i = 0; i <this.sNextList.size() ; i++) {
-                if(this.sNextList.get(i) == state ) {
-                    inState = true;
-                }
-            }
-            if(!inState) {
-                this.sNextList.add(state);
-            }
-        } else {
-            this.sNextList.add(state);
-        }
-    }*/
-
     public ArrayList<Transition> getPartitionList() {
         return this.partition;
     }
@@ -161,11 +183,6 @@ public class Partition {
     public ArrayList<Integer> getStatesList() {
         return this.statesList;
     }
-
-    /*
-    public ArrayList<Integer> getsNextList() {
-        return this.sNextList;
-    }*/
 
     public int getID() {
         return this.id;
@@ -181,5 +198,20 @@ public class Partition {
 
     public String toString() {
         return this.partition.get(0).toString();
+    }
+
+    public ArrayList<PDP> getPDP() {
+        return PDP;
+    }
+
+    public ArrayList<Integer> getSNextforState(int state, int actionNum) {
+
+        for (int i = 0; i < this.statesList.size(); i++) {
+            if(this.statesList.get(i) == state) {
+                return this.partition.get(i).getAction(actionNum).getsNext();
+            }
+        }
+        System.out.println("Shit fuck");
+        return null;
     }
 }

@@ -32,7 +32,7 @@ public class VI_PP extends Solver {
         InitialSequence();
 
         solvePartition();
-
+        updatePartitionPriority();
 
     }
 
@@ -43,12 +43,14 @@ public class VI_PP extends Solver {
 
         this.partitions = createPartition(fa);
         initializePDP();
+        initializeHPP();
+
 
         for (int i = 0; i <this.partitions.size() ; i++) {
             this.partitions.get(i).initializePriorityPartitions(this.mdp);
         }
         findMaxPriority();
-        System.out.println("Starting on partition: " + this.solveP);
+        //System.out.println("Starting on partition: " + this.solveP);
 
     }
 
@@ -104,14 +106,14 @@ public class VI_PP extends Solver {
         int partitionAmount = 10;
 
         int iterationAmount = fa.size();
-        System.out.println("Size of Transition table : " + iterationAmount);
+        //System.out.println("Size of Transition table : " + iterationAmount);
         double partitionSize = (double) iterationAmount/partitionAmount;
         int minPartitionSize = (int) partitionSize;
         int leftOvers    = (int) Math.round( (double) (partitionSize - minPartitionSize)*partitionAmount);
 
 
         if(leftOvers + minPartitionSize*partitionAmount != iterationAmount) {
-            System.out.println("Parition size is not correct. Something went wrong creating paritions");
+            //System.out.println("Parition size is not correct. Something went wrong creating paritions");
             System.exit(0);
         }
 
@@ -140,13 +142,21 @@ public class VI_PP extends Solver {
             for (int j = 0; j <this.partitions.size() ; j++) {
                 this.partitions.get(i).comparePartitions(this.partitions.get(j));
             }
+            //System.out.println("I am here: " + this.partitions.get(i).getPDP().get(0).toString());
+        }
+    }
+
+    private void initializeHPP() {
+        for (int i = 0; i < this.partitions.size() ; i++) {
+            this.partitions.get(i).initializeHPP(this.partitions.size());
+
         }
     }
 
     private void findMaxPriority() {
         double max = 0;
         for (int i = 0; i < this.partitions.size() ; i++) {
-            System.out.println("Partition: " + i + " maxPriority: " + this.partitions.get(i).getPrioirty());
+            //System.out.println("Partition: " + i + " maxPriority: " + this.partitions.get(i).getPrioirty());
             if(max < this.partitions.get(i).getPrioirty()) {
                 max = this.partitions.get(i).getPrioirty();
                 solveP = i;
@@ -154,37 +164,47 @@ public class VI_PP extends Solver {
         }
     }
 
-    public void finishingSequence() {
-
-    }
-
-
     public void solvePartition() {
         double bellman;
+
+        for (int i = 0; i < this.partitions.size() ; i++) {
+            //System.out.println(i + ". " + this.partitions.get(i).getStatesList().toString());
+        }
+
         //For each Transition in the partition
-        for (int m = 0; m < 3; m++) {
+        for (int m = 0; m < 400; m++) {
+            System.out.println("Solving this partition: " + this.solveP);
+            this.partitions.get(this.solveP).setmaxH(0);
+            ArrayList<Transition> solPartition = this.partitions.get(this.solveP).getPartition();
+            for (int i = 0; i < solPartition.size(); i++) { // For each state -> solPartition.get(i).getState;
+                int state = solPartition.get(i).getState();
+                for (int j = 0; j < solPartition.get(i).getActionList().size(); j++) { //For each Action
+                    Actions action = solPartition.get(i).getAction(j);
+                        bellman = calculateValue(state, action.getActionNum(), action.getsNext());
+                        this.qTable[state][action.getActionNum()] = bellman;
+                    //System.out.println("Bellman should be: " + (bellman - this.qTablePrev[state][action.getActionNum()]) + " V(t): " + bellman);
+                }
 
 
-        ArrayList<Transition> solPartition = this.partitions.get(this.solveP).getPartition();
-        for (int i = 0; i < solPartition.size(); i++) { // For each state -> solPartition.get(i).getState;
-            int state = solPartition.get(i).getState();
-            for (int j = 0; j < solPartition.get(i).getActionList().size(); j++) { //For each Action
-                Actions action = solPartition.get(i).getAction(j);
-                    bellman = calculateValue(state, action.getActionNum(), action.getsNext());
-                    this.qTable[state][action.getActionNum()] = bellman;
             }
-
-
+            saveCurrentQMatrix();
+            updatePartitionPriority();
+            findMaxPriority();
         }
-        saveCurrentQMatrix();
-        }
+
         printQTable();
+
     }
 
     private double calculateValue(int state, int action,  ArrayList<Integer> statesPossible) {
         double value, sum = 0.0;
         int sNext;
         //System.out.println(statesPossible.toString());
+        if(statesPossible.isEmpty()) {
+            System.out.println("Hello stranger");
+            return 0;
+        }
+
         for(sNext = 0; sNext < statesPossible.size(); sNext++) {
             sum = sum + this.mdp.getTransitionProbability(state, action, statesPossible.get(sNext))*getMaxQTablePrev(statesPossible.get(sNext));
         }
@@ -193,8 +213,50 @@ public class VI_PP extends Solver {
         return value;
     }
 
-    private double updatePartitionPriority(){
-        
+    private void updatePartitionPriority() {
+
+        for (int i = 0; i < this.partitions.get(this.solveP).getPDP().size() ; i++) {
+            this.partitions.get(this.partitions.get(this.solveP).getPDP().get(i).getID()).setHPP(this.solveP, 0);
+        }
+
+        for (int i = 0; i < this.partitions.get(this.solveP).getPDP().size(); i++) {
+            int partitionNum = this.partitions.get(this.solveP).getPDP().get(i).getID();
+            calculateHtsNext( partitionNum, this.partitions.get(this.solveP).getPDP().get(i).getsNextList() );
+            this.partitions.get(partitionNum).findMaxHP();
+            //System.out.println(i + "For partition: " + this.solveP + " I need to update these partitions: " + this.partitions.get(this.solveP).getPDP().get(i).getID() + " these states need to be recalculted: " + this.partitions.get(this.solveP).getPDP().get(i).toString());
+        }
+
+    }
+
+    private void calculateHtsNext(int partition, ArrayList<Integer> sNextList) {
+        double hmax = 0;
+        //System.out.println(partition + "List of sNext for this partition: " + this.partitions.get(partition).getPartition().toString() + " sNextList: " + sNextList.toString());
+        //Look into transition
+        //For this partition recompute HT
+        double value;
+
+        for (int i = 0; i < sNextList.size() ; i++) {
+            int maxAction = findPolicy(sNextList.get(i), this.mdp.getNumActions());
+            value = calculateValue(sNextList.get(i), maxAction, this.partitions.get(partition).getSNextforState(sNextList.get(i), maxAction) );
+            if(hmax < value - this.qTablePrev[sNextList.get(i)][maxAction]) {
+                hmax = value - this.qTablePrev[sNextList.get(i)][maxAction];
+            }
+           // System.out.println("Value: " + (value - this.qTablePrev[sNextList.get(i)][maxAction]));
+        }
+
+        this.partitions.get(partition).setHPP(this.solveP, hmax);
+    }
+
+    private int findPolicy(int state, int numActions) {
+        double max = 0;
+        int action = 0;
+        for (int i = 0; i < numActions ; i++) {
+            if(this.qTable[state][i] > max) {
+                max = this.qTable[state][i];
+                action = i;
+            }
+        }
+        return action;
     }
 
     private double getMaxQTablePrev(int s) {
@@ -221,6 +283,18 @@ public class VI_PP extends Solver {
 
     }
 
+    private int getPolicy(int state) {
+        double max = 0;
+        int action = 0;
+        for (int i = 0; i < this.mdp.getNumActions() ; i++) {
+            if(max < this.qTable[state][i]) {
+                max = this.qTable[state][i];
+                action = i;
+            }
+        }
+        return action;
+    }
+
     private void saveCurrentQMatrix() {
         for(int s = 0; s < this.mdp.getNumStates(); s++) {
             for(int a = 0; a < this.mdp.getNumActions(); a++) {
@@ -238,13 +312,6 @@ public class VI_PP extends Solver {
         return delta;
     }
 
-
-
-
-
-
-
-
     private double getValueH(int i){
         return this.mdp.getReward(this.H.get(i).get(0),this.H.get(i).get(1));
     }
@@ -253,7 +320,9 @@ public class VI_PP extends Solver {
         this.vt = new double[this.mdp.getNumStates()];
     }
 
+    public void finishingSequence() {
 
+    }
 
 
 }
