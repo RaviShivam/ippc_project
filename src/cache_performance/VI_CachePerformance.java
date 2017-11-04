@@ -3,11 +3,14 @@ package cache_performance;
 import java.util.ArrayList;
 import parser.*;
 
+import static java.lang.Math.max;
+
 public class VI_CachePerformance extends Solver {
-	private double[]   vt;
-	private ArrayList<ArrayList<Double>> priorityList = new ArrayList<ArrayList<Double>>();
-	private ArrayList<ArrayList<ArrayList<Integer>>> actionList;
-	
+
+	private int amountOfPartitions = 3;
+	private ArrayList<Partition> partitions;
+	private int solvePartion;
+
 	//TODO:
 	//Need to split up priorityList into paritions somehow.
 	
@@ -18,178 +21,186 @@ public class VI_CachePerformance extends Solver {
 		super(mdp);
 		this.solverName = "VI_CachePerformance";
 	}
-	
-	public void clear() {
-		this.priorityList.clear();
-		this.actionList.clear();
-	}
-	
+
 	public void Solve() {
-		initializeQTable();
-		initializeVt();
-		this.actionList = sortFeasibleActions(this.mdp);
-		// Make assert that discount factor has to be between 0-1
+		initializationSequence();
 		double delta = 1;
 		int count = 0;
-		
-		//Making initial QMatrix
-		delta = calculateQMatrix(mdp);		
-		//Saving current QMatrix in qTablePrev
-		saveCurrentQMatrix();
-		
-		prioritizeList();
-		
-		while(delta > 0.00001) {
-			delta = 0;
+		while(delta > 0.0001){
+			delta = 0.0;
 			count++;
-			delta = calculateQMatrix(mdp, this.actionList, this.priorityList);
-			saveCurrentQMatrix();
-			prioritizeList();
+			Partition p = partitions.get(solvePartion);
+			solvPartition(p);
+			updatePartitionPriority(p.getSDP());
+			delta = maxHPP();
 		}
-//		mu.recordMemoryUsuage();
-//		//printQTable();
-//		System.out.format("The amount of cycles was: %d%n", count);
+
+		printQTable();
+		System.out.println("This many cycles: " + count);
+
 	}
-	
-	private double calculateQMatrix(POMDP mdp) {
-		double delta = 0;
-		int s,a;
-		for(s = 0; s < this.mdp.getNumStates(); s++) {
-			double bellman;
-			//Iterating over each Action
-			for(a = 0; a < this.actionList.get(s).size(); a++) {
-				bellman = calculateValue(this.mdp, this.actionList.get(s).get(a), s, a);
-				this.qTable[s][a] = bellman;
-				delta = getDelta(delta, s, a);
+
+	private void solvPartition(Partition p){
+
+		for (int j = 0; j < p.getNumberOfStates() ; j++) {
+			State s = p.getStateList().get(j);
+			for (int k = 0; k < s.numActions(); k++) {
+				double bellman = calculateBellman(s.getStateNum(), s.getActionNumber(k), s.getAction(k).getsNextList());
+				qTable[s.getStateNum()][s.getActionNumber(k)] = bellman;
+				s.setHT(bellman - qTablePrev[s.getStateNum()][s.getActionNumber(k)]); //This is wrong
 			}
+
 		}
-		return delta;
+		p.setMaxPrioirity(0.0);
+		saveCurrentQMatrix();
 	}
-	
-	private double calculateQMatrix(POMDP mdp, ArrayList<ArrayList<ArrayList<Integer>>> actionList, ArrayList<ArrayList<Double>> priorityList ) {
-		double bellman, delta = 0;
-		int i, state, action, sNext;
-		for(i = priorityList.size() - 1; i > 0; i--) {
-			state = (int) priorityList.get(i).get(1).intValue();
-			action = (int) priorityList.get(i).get(2).intValue();
-			//System.out.println("Action: " + action + " state: " + state + " size of actionlist: " + actionList.size());
-			bellman = calculateValue(mdp, actionList.get(state).get(action), state, action);
-			this.qTable[state][action] = bellman;
-			delta = getDelta(delta, state, action, i);
+
+	private double solvState(State s, double max) {
+		double hmax = max;
+		for (int k = 0; k < s.numActions(); k++) {
+			double bellman = calculateBellman(s.getStateNum(), s.getActionNumber(k), s.getAction(k).getsNextList());
+			qTable[s.getStateNum()][s.getActionNumber(k)] = bellman;
+			s.setHT(bellman - qTablePrev[s.getStateNum()][s.getActionNumber(k)]);
+			hmax = max(max, s.getHT());
 		}
-		return delta;
+
+		return hmax;
 	}
-	
-	/**
-	 * Calculates a value for a Qmatrix given a certain State and Action
-	 * @param mdp
-	 * @param statesPossible - ArrayList<Integer> that holds all possible sNext states for a given action
-	 * @param state
-	 * @param action
-	 * @return
-	 */
-	private double calculateValue(POMDP mdp, ArrayList<Integer> statesPossible, int state, int action) {
+
+	private double calculateBellman(int state, int action, ArrayList<Integer> sNextList) {
 		double value, sum = 0.0;
 		int sNext;
-		//System.out.println(statesPossible.toString());
-		for(sNext = 0; sNext < statesPossible.size(); sNext++) {
-			sum = sum + mdp.getTransitionProbability(state, action, statesPossible.get(sNext))*getMaxQTablePrev(statesPossible.get(sNext));
+		for(sNext = 0; sNext < sNextList.size(); sNext++) {
+			sum = sum + mdp.getTransitionProbability(state, action, sNextList.get(sNext))*getMaxQTablePrev(sNextList.get(sNext));
 		}
 		value = mdp.getReward(state, action) + mdp.getDiscountFactor()*sum;
-		//System.out.println("Value going into Qmatrix: " + value);
 		return value;
 	}
-	
-	/**
-	 * Returns an ArrayList with all feasible actions and s' (next states)
-	 * This reduces the search space for the value iterator
-	 * @param mdp - Type: POMDP
-	 * @return ArrayList<ArrayList<ArrayList<Integer>>> 
-	 */
-	private ArrayList<ArrayList<ArrayList<Integer>>> sortFeasibleActions(POMDP mdp) {
-		int s, a, sNext;
-		
-		ArrayList<ArrayList<ArrayList<Integer>>> actionList = new ArrayList<ArrayList<ArrayList<Integer>>>();
-		for(s = 0; s < mdp.getNumStates(); s++) {
-			ArrayList<ArrayList<Integer>> possibleActions = new ArrayList<ArrayList<Integer>>();
-			for(a = 0; a < mdp.getNumActions(); a++) {
-				ArrayList<Integer> possibleSNext = new ArrayList<Integer>();
-				for(sNext = 0; sNext < mdp.getNumStates(); sNext++) {
-					if(mdp.getTransitionProbability(s, a, sNext) > 0) {
-						//System.out.println("statepossibility list: " + mdp.getTransitionProbability(s, a, sNext) + " s: " + s + " sNext: " + sNext);
-						possibleSNext.add(sNext);
-					} 
-				}
-				possibleActions.add(possibleSNext);
+
+	private void updatePartitionPriority(ArrayList<SDP> SDP) {
+
+		ArrayList<Integer> PDP = new ArrayList<>();
+		for (int i = 0; i < SDP.size(); i++) {
+			PDP.add(SDP.get(i).getPartitionNumber());
+		}
+
+		// update partition priority for all dependent partitions
+		//for all subset p' from PDP(P) do
+		for (int i = 0; i < PDP.size(); i++) {
+			Partition p = partitions.get(PDP.get(i));
+			p.setHPP(solvePartion, (double) 0.0);
+			p.setMaxPrioirity(0.0);
+
+			double hmax = 0;
+
+			for (int j = 0; j < SDP.get(i).getStateList().size(); j++) {
+				hmax = max(hmax, solvState(SDP.get(i).getStateList().get(j), hmax));
 			}
-			actionList.add(possibleActions);
+			p.setHPP(solvePartion, hmax);
+			p.findMaxHPP();
+			saveCurrentQMatrix();
 		}
-		//System.out.println(actionList.toString());
-		return actionList;
+		solvePartion = findMaxPriority();
+
 	}
-	
-	
-	private void prioritizeList() {
-		int length = this.priorityList.size();
-		
-		if(this.priorityList == null || length == 0) {
-			System.out.println("Could not prioritize list due to no values being in the list");
-			return;
+
+	public void initializationSequence() {
+		//Make states,actions and find all feasible actions
+		ArrayList<State> states = initializeStates();
+		initializeQTable();
+
+		//Partitioning the states
+		this.partitions = new ArrayList<>();
+		partitionStates(states);
+		this.solvePartion = initialPartition();
+
+		//Finding dependencies between partitions
+		initializeSDS();
+	}
+
+	public ArrayList<State> initializeStates() {
+		int state, action, sNext;
+		ArrayList<State> allStates = new ArrayList<>();
+
+		//Cycle through each state
+		for (state = 0; state < this.mdp.getNumStates(); state++) {
+
+			ArrayList<Actions> actionList = new ArrayList<>();
+			//Cycle through each action
+			for (action = 0; action < this.mdp.getNumActions(); action++) {
+
+				ArrayList<Integer> sNextList = new ArrayList<>();
+				//For each possible sNext
+				for (sNext = 0; sNext < this.mdp.getNumStates(); sNext++) {
+					if (mdp.getTransitionProbability(state, action, sNext) > 0) {
+						sNextList.add(sNext);
+					}
+				}
+				Actions act = new Actions(action, sNextList);
+				actionList.add(act);
+			}
+			State st = new State(state, actionList, this.mdp);
+			allStates.add(st);
 		}
-		
-		quickSort(0, length - 1);
-		//System.out.println(this.priorityList.toString() + "\n");
+		return allStates;
 	}
-	
-	/**
-	 * Sorting Algorithm comes from: http://www.vogella.com/tutorials/JavaAlgorithmsQuicksort/article.html
-	 * @param low
-	 * @param high
-	 */
-	private void quickSort(int low, int high) {
-		int i = low;
-		int j = high;
-        // Get the pivot element from the middle of the list
-        Double pivot = this.priorityList.get(low + (high-low)/2).get(0);
 
-        // Divide into two lists
-        while (i <= j) {
-            // If the current value from the left list is smaller than the pivot
-            // element then get the next element from the left list
-            while (this.priorityList.get(i).get(0) < pivot) {
-                i++;
-            }
-            // If the current value from the right list is larger than the pivot
-            // element then get the next element from the right list
-            while (this.priorityList.get(j).get(0) > pivot) {
-                j--;
-            }
+	public void partitionStates(ArrayList<State> allStates) {
+		int partitionSize;
 
-            // If we have found a value in the left list which is larger than
-            // the pivot element and if we have found a value in the right list
-            // which is smaller than the pivot element then we exchange the
-            // values.
-            // As we are done we can increase i and j
-            if (i <= j) {
-                exchange(i, j);
-                i++;
-                j--;
-            }
-        }
-        // Recursion
-        if (low < j)
-            quickSort(low, j);
-        if (i < high)
-            quickSort(i, high);
+
+		// If amount of states allow for an equal amount of states in each partition do this loop
+		if( (allStates.size() % amountOfPartitions ) == 0 ) {
+			partitionSize = allStates.size() / amountOfPartitions;
+
+			for (int i = 0; i < amountOfPartitions; i++) {
+				ArrayList<State> tempPartition = new ArrayList<>();
+				for (int j = 0; j < partitionSize; j++) {
+					tempPartition.add(allStates.get(i*partitionSize + j));
+				}
+				this.partitions.add(new Partition(i, tempPartition, amountOfPartitions));
+			}
+		} else {
+			partitionSize = allStates.size() / amountOfPartitions;
+			for (int i = 0; i < amountOfPartitions; i++) {
+				ArrayList<State> tempPartition = new ArrayList<>();
+				for (int j = 0; j < partitionSize; j++) {
+					tempPartition.add(allStates.get(i*partitionSize + j));
+				}
+				this.partitions.add(new Partition(i, tempPartition, amountOfPartitions));
+			}
+
+			int leftOvers = allStates.size() - partitionSize*amountOfPartitions;
+
+
+		}
 
 	}
-	
-	private void exchange(int i, int j) {
-		ArrayList<Double> temp = this.priorityList.get(i);
-		this.priorityList.set(i, this.priorityList.get(j));
-		this.priorityList.set(j, temp);
+
+	public int initialPartition(){
+		double max = 0.0;
+		int p = 0;
+		for (int i = 0; i < amountOfPartitions ; i++) {
+			if(max < partitions.get(i).getMaxReward()) {
+				max = partitions.get(i).getMaxReward();
+				p = i;
+			}
+		}
+		return p;
 	}
-	
+
+	public void initializeSDS() {
+		//For each partition
+		for (int i = 0; i < amountOfPartitions; i++) {
+			//Try every partition
+			for (int j = 0; j < amountOfPartitions; j++) {
+				if(i != j) {
+					this.partitions.get(i).checkPartitionDependence(this.partitions.get(j));
+				}
+			}
+		}
+	}
+
 	private double getMaxQTablePrev(int s) {
 		double max = 0;
 
@@ -200,10 +211,10 @@ public class VI_CachePerformance extends Solver {
 		}
 		return max;
 	}
-	
+
 	private void printQTable() {
 		int s,a;
-		
+
 		for( s=0; s<this.mdp.getNumStates(); s++) {
 			for( a=0; a<this.mdp.getNumActions(); a++) {
 				System.out.format("%06.3f  ", qTable[s][a]);
@@ -211,9 +222,8 @@ public class VI_CachePerformance extends Solver {
 			System.out.format("%n");
 		}
 		System.out.format("%n%n%n");
-		
 	}
-	
+
 	private void saveCurrentQMatrix() {
 		for(int s = 0; s < this.mdp.getNumStates(); s++) {
 			for(int a = 0; a < this.mdp.getNumActions(); a++) {
@@ -221,41 +231,38 @@ public class VI_CachePerformance extends Solver {
 			}
 		}
 	}
-	
-	private double getDelta(double delta, int s, int a, int i) {
-		this.priorityList.remove(i);
-		ArrayList<Double> info = new ArrayList<Double>();
-		double d;	
-		d = (double) Math.abs( this.qTable[s][a]) - Math.abs(this.qTablePrev[s][a]);
-		info.add(d);
-		info.add((double) s);
-		info.add((double) a);
-		
-		//System.out.println("delta: " + d);
-		//if(d > 0) {this.priorityList.add(info); }
-		this.priorityList.add(info);
-		if(delta < d) {
-			return d;
+
+	private int findMaxPriority(){
+		double max = 0.0;
+		int p = 0;
+		ArrayList<Double> temp = new ArrayList<>();
+		for (int i = 0; i < partitions.size(); i++) {
+			temp.add(partitions.get(i).getMaxReward());
+			if(max < partitions.get(i).getMaxReward()) {
+				max = partitions.get(i).getMaxReward();
+				p = i;
+			}
 		}
-		return delta;
+
+		//System.out.println("Max Priority: " + p + " all max values: " + temp.toString());
+		return p;
 	}
-	
-	//This function does not work
-	private double getDelta(double delta, int s, int a) {
-		ArrayList<Double> info = new ArrayList<Double>();
-		double d;	
-		d = (double) Math.abs( this.qTable[s][a]) - Math.abs(this.qTablePrev[s][a]);
-		info.add(d);
-		info.add((double) s);
-		info.add((double) a);
-		this.priorityList.add(info);
-		if(delta < d) {
-			return d;
+
+	private double maxHPP() {
+		double max = 0.0;
+		for (int i = 0; i < partitions.size(); i++) {
+			if(max < partitions.get(i).getMaxReward()) {
+				max = partitions.get(i).getMaxReward();
+			}
 		}
-		return delta;
+		return max;
+
 	}
-	
-	private void initializeVt() {
-		this.vt = new double[this.mdp.getNumStates()];
+
+	private void printAllHPP() {
+		for (int i = 0; i < partitions.size(); i++) {
+			partitions.get(i).printHPP();
+		}
 	}
+
 }

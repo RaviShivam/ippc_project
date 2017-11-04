@@ -18,10 +18,10 @@ public class Benchmark {
 
 	private void loadPOMDP() {
 		this.testProblems = new ArrayList<POMDP>();
-//		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway.POMDP"));
+		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway.POMDP"));
 //		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway2.POMDP"));
 //		this.testProblems.add(ParsePOMDP.LargeMDP("domains/aircraft.POMDP"));
-		this.testProblems.add(ParsePOMDP.readPOMDP("domains/aircraft2.POMDP"));
+//		this.testProblems.add(ParsePOMDP.readPOMDP("domains/aircraft2.POMDP"));
 		
 	}
 	
@@ -51,10 +51,10 @@ public class Benchmark {
 		benchmark.loadPOMDP();
 		benchmark.initPrintWriter("results/result.csv");
 		for (POMDP problem : benchmark.getTestProblems()) {
-			benchmark.benchmark(new MCTSSolver(problem));
+//			benchmark.benchmark(new MCTSSolver(problem));
 //			benchmark.benchmark(new VI(problem));
-//			benchmark.benchmark(new VI_FeasibleActions(problem));
-//			benchmark.benchmark(new VI_CachePerformance(problem));
+			benchmark.benchmark(new VI_FeasibleActions(problem));
+			benchmark.benchmark(new VI_CachePerformance(problem));
 
 		}
 		benchmark.closePrintWriter();

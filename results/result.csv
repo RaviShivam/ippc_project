@@ -1,0 +1,3 @@
+solver; problem; memory (MB); time (s)
+VI_FeasibleActions, hallway, 5.195, 0.0300
+VI_CachePerformance, hallway, 25.944, 0.0320
