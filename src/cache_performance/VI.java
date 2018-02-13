@@ -3,11 +3,7 @@ import benchmark.Metrics;
 import parser.*;
 
 public class VI extends Solver {
-	private static final long MEGABYTE = 1024L * 1024L;
 
-	public static long bytesToMegabytes(long bytes) {
-		return bytes / MEGABYTE;
-	}
 
 	public VI() {
 		
@@ -30,23 +26,36 @@ public class VI extends Solver {
 		double sum;
 		double delta = 1;
 		int count = 0;
+		this.log.startTimer();
 		while(delta > 0.0001) {
-			delta = 0;
-			count++;
-			for(s = 0; s < this.mdp.getNumStates(); s++) {
-				for(a = 0; a < this.mdp.getNumActions(); a++) {
-					sum = 0.0;
 
-					for(sNext = 0; sNext < this.mdp.getNumStates(); sNext++) {
-						sum = sum + this.mdp.getTransitionProbability(s, a, sNext)*getMaxQTablePrev(sNext);
+			if(this.log.getDeltaTime() < RECORDTIME) {
+				delta = 0;
+				count++;
+				for(s = 0; s < this.mdp.getNumStates(); s++) {
+					for(a = 0; a < this.mdp.getNumActions(); a++) {
+						sum = 0.0;
+
+						for(sNext = 0; sNext < this.mdp.getNumStates(); sNext++) {
+							sum = sum + this.mdp.getTransitionProbability(s, a, sNext)*getMaxQTablePrev(sNext);
+						}
+						this.qTable[s][a] = this.mdp.getReward(s, a) + this.mdp.getDiscountFactor()*sum;
+						delta = getDelta(delta, s, a);
 					}
-					this.qTable[s][a] = this.mdp.getReward(s, a) + this.mdp.getDiscountFactor()*sum;
-					delta = getDelta(delta, s, a);
 				}
+				saveCurrentQMatrix();
+				this.log.updateTime();
+			} else {
+				this.log.resetSplit();
+				double maxR = this.maxReward();
+				//Long mem = mu.getMemoryUsuage();
+				memory = runtime.totalMemory() - runtime.freeMemory();
+				this.log.addVIElement(maxR, count, bytesToMegabytes(memory));
 			}
-			saveCurrentQMatrix();
 
 		}
+
+		this.log.save("VI");
 		//printQTable();
 //		mu.recordMemoryUsuage();
 //		System.out.format("The amount of cycles was: %d%n", count);
@@ -93,5 +102,7 @@ public class VI extends Solver {
 		}
 		return delta;
 	}
+
+
 	
 }

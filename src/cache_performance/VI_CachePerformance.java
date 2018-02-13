@@ -24,17 +24,28 @@ public class VI_CachePerformance extends Solver {
 
 	public void Solve() {
 		initializationSequence();
+		Runtime runtime = Runtime.getRuntime();
+		long memory = runtime.totalMemory() - runtime.freeMemory();
 		double delta = 1;
 		int count = 0;
+		this.log.startTimer();
 		while(delta > 0.0001){
-			delta = 0.0;
-			count++;
-			Partition p = partitions.get(solvePartion);
-			solvPartition(p);
-			updatePartitionPriority(p.getSDP());
-			delta = maxHPP();
+			if(this.log.getDeltaTime() < RECORDTIME) {
+				delta = 0.0;
+				count++;
+				Partition p = partitions.get(solvePartion);
+				solvPartition(p);
+				updatePartitionPriority(p.getSDP());
+				delta = maxHPP();
+				this.log.updateTime();
+			} else {
+				this.log.resetSplit();
+				double maxR = this.maxReward();
+				memory = runtime.totalMemory() - runtime.freeMemory();
+				this.log.addVIElement(maxR, count, bytesToMegabytes(memory));
+			}
 		}
-
+		this.log.save("Cache_Performance");
 		printQTable();
 		System.out.println("This many cycles: " + count);
 

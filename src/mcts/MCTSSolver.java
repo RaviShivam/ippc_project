@@ -10,14 +10,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class MCTSSolver extends Solver {
-    private int TIMEOUT = 2000;
+    private int TIMEOUT = 20000;
     private int depth = 100;
-    private int horizon = 150;
+    private int horizon = 100;
     private MCTSNode root;
+    private int solv = 0;
 
     public MCTSSolver(POMDP mdp) {
         super(mdp);
         this.solverName = "MCTS Solver";
+        solv = solv + 1;
     }
 
     public MCTSSolver(POMDP mdp, int TIMEOUT) {
@@ -40,20 +42,35 @@ public class MCTSSolver extends Solver {
     }
 
     public void Solve(){
+
         MCTSNode root = new MCTSNode(this.mdp, mdp.getInitialState());
+        Runtime runtime = Runtime.getRuntime();
+        long memory = runtime.totalMemory() - runtime.freeMemory();
         long start = System.currentTimeMillis();
-        long elapsed_time;
+        long elapsed_time =  System.currentTimeMillis() - start;
+        this.log.startTimer();
+        this.log.addMCTSElement(0.0, bytesToMegabytes(memory));
         do {
-            root.simulateRound(this.horizon);
+            if(this.log.getDeltaTime() < RECORDTIME){
+                root.simulateRound(this.horizon);
 //            printChildren(root);
-            elapsed_time = System.currentTimeMillis() - start;
-//        } while (true);
+                elapsed_time = System.currentTimeMillis() - start;
+                this.log.updateTime();
+            } else {
+                this.log.resetSplit();
+
+                memory = runtime.totalMemory() - runtime.freeMemory();
+                this.log.addMCTSElement(calculateValue(root, this.depth), bytesToMegabytes(memory));
+            }
+
         } while (elapsed_time < this.TIMEOUT);
-        System.out.println(tranverseTreeBestChild(root, this.depth));
+        this.solv = this.solv + 1;
+        this.log.save("MCTS_" + this.solv);
+        System.out.println(calculateValue(root, this.depth));
         this.root = root;
     }
 
-    private double tranverseTreeBestChild(MCTSNode root, int horizon) {
+    private double calculateValue(MCTSNode root, int horizon) {
         if (horizon==0 || root.getChildren().isEmpty()) return 0.0;
         Pair<Integer, Integer> best_action_state = root.getChildren().keySet().iterator().next();
         MCTSNode best_Child = root.getChildren().get(best_action_state);
@@ -63,7 +80,7 @@ public class MCTSSolver extends Solver {
                 best_Child = root.getChildren().get(best_action_state);
             }
         }
-        return this.mdp.getReward(root.getStateLabel(), best_action_state.getKey()) + this.tranverseTreeBestChild(best_Child, horizon-1);
+        return this.mdp.getReward(root.getStateLabel(), best_action_state.getKey()) + this.mdp.getDiscountFactor()*this.calculateValue(best_Child, horizon-1);
     }
 
     public static void main(String[] args) throws IOException {
@@ -77,7 +94,7 @@ public class MCTSSolver extends Solver {
             int time_out = 0;
             for (int i = 0; i < 21; i++) {
                 mctsSolver.Solve(time_out);
-                double value = mctsSolver.tranverseTreeBestChild(mctsSolver.root, mctsSolver.depth);
+                double value = mctsSolver.calculateValue(mctsSolver.root, mctsSolver.depth);
                 writer.println(time_out + ", " + value);
                 time_out += 100;
             }

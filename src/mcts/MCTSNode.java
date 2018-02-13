@@ -21,6 +21,8 @@ public class MCTSNode {
     private double discount;
     private double Cp = 7;
 
+    private double bestV;
+
 
     public MCTSNode(POMDP mdp, int stateLabel) {
         this.mdp = mdp;
@@ -78,6 +80,7 @@ public class MCTSNode {
                 bestValue = uctValue;
             }
         }
+        this.bestV = bestValue;
         return new Pair<>(action, selected);
     }
 
@@ -119,5 +122,9 @@ public class MCTSNode {
 
     public int getStateLabel() {
         return stateLabel;
+    }
+
+    public double getBestValue() {
+        return this.bestV;
     }
 }

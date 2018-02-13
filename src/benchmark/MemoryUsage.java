@@ -44,4 +44,10 @@ public class MemoryUsage {
 	    String smemMax = df.format((double)memUsage.getMax()/(1024 * 1024));
 	    System.out.println("Heap memory usage (in MB): " + smemUsed + "/" + smemMax);
 	}
+
+	public Long getMemoryUsuage() {
+		java.text.DecimalFormat df = new java.text.DecimalFormat("#0.00");
+		String smemUsed = df.format((double)memUsage.getUsed()/(1024 * 1024));
+		return this.memUsage.getUsed();
+	}
 }

@@ -24,31 +24,45 @@ public class VI_FeasibleActions extends Solver{
 	public void Solve() {
 		initializeQTable();
 		initializeVt();
+		Runtime runtime = Runtime.getRuntime();
+		long memory = runtime.totalMemory() - runtime.freeMemory();
 		this.actionList = sortFeasibleActions(this.mdp);
 		// Make assert that discount factor has to be between 0-1
 		int s,a;
 		double sum;
 		double delta = 1;
 		int count = 0;
+		this.log.startTimer();
 		while(delta > 0.0001) {
 		//for (int i = 0; i < 2000; i++) {
-			delta = 0;
-			count++;
-			//Iterating over each State
-			for(s = 0; s < this.mdp.getNumStates(); s++) {
-				double bellman;
-				//Iterating over each Action
-				for(a = 0; a < this.actionList.get(s).size(); a++) {
-					bellman = calculateValue(this.mdp, this.actionList.get(s).get(a), s, a);
-					this.qTable[s][a] = bellman;
 
-					delta = getDelta(delta, s, a);
+			if(this.log.getDeltaTime() < RECORDTIME) {
+				delta = 0;
+				count++;
+				//Iterating over each State
+				for(s = 0; s < this.mdp.getNumStates(); s++) {
+					double bellman;
+					//Iterating over each Action
+					for(a = 0; a < this.actionList.get(s).size(); a++) {
+						bellman = calculateValue(this.mdp, this.actionList.get(s).get(a), s, a);
+						this.qTable[s][a] = bellman;
+
+						delta = getDelta(delta, s, a);
+					}
 				}
+				saveCurrentQMatrix();
+				this.log.updateTime();
+			} else {
+				this.log.resetSplit();
+				double maxR = this.maxReward();
+				memory = runtime.totalMemory() - runtime.freeMemory();
+				this.log.addVIElement(maxR, count, bytesToMegabytes(memory));
 			}
-			saveCurrentQMatrix();
+
 
 		}
 //		mu.recordMemoryUsuage();
+		this.log.save("VI_FeasibleActions");
 		printQTable();
 		System.out.format("The amount of cycles was: %d%n", count);
 	}

@@ -10,6 +10,8 @@ import mcts.MCTSSolver;
 import parser.POMDP;
 import parser.ParsePOMDP;
 
+
+
 public class Benchmark {
 	
 	private ArrayList<POMDP> testProblems;
@@ -19,9 +21,8 @@ public class Benchmark {
 	private void loadPOMDP() {
 		this.testProblems = new ArrayList<POMDP>();
 		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway.POMDP"));
-//		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway2.POMDP"));
-//		this.testProblems.add(ParsePOMDP.LargeMDP("domains/aircraft.POMDP"));
-//		this.testProblems.add(ParsePOMDP.readPOMDP("domains/aircraft2.POMDP"));
+		this.testProblems.add(ParsePOMDP.readPOMDP("domains/hallway2.POMDP"));
+//		this.testProblems.add(ParsePOMDP.LargeMDP("domains/hallway.POMDP"));
 		
 	}
 	
@@ -47,16 +48,34 @@ public class Benchmark {
 	}
 
 	public static void main(String[] args) throws IOException {
-		Benchmark benchmark = new Benchmark();
-		benchmark.loadPOMDP();
-		benchmark.initPrintWriter("results/result.csv");
-		for (POMDP problem : benchmark.getTestProblems()) {
-//			benchmark.benchmark(new MCTSSolver(problem));
-//			benchmark.benchmark(new VI(problem));
-			benchmark.benchmark(new VI_FeasibleActions(problem));
-			benchmark.benchmark(new VI_CachePerformance(problem));
 
+		Benchmark benchmark = new Benchmark();
+		if(false){
+			benchmark.testCSV();
+		} else {
+			benchmark.loadPOMDP();
+			benchmark.initPrintWriter("results/result.csv");
+			for (POMDP problem : benchmark.getTestProblems()) {
+//				benchmark.benchmark(new MCTSSolver(problem));
+				benchmark.benchmark(new VI(problem));
+				benchmark.benchmark(new VI_FeasibleActions(problem));
+				benchmark.benchmark(new VI_CachePerformance(problem));
+			}
+			benchmark.closePrintWriter();
 		}
-		benchmark.closePrintWriter();
+
     }
+
+    public void testCSV() {
+
+		ArrayList<String> List = new ArrayList<>();
+
+		List.add("0,0,0,0,0");
+		List.add("1,2,3,4,5");
+		List.add("6,7,8,9,10");
+
+		CSVFile csvFile = new CSVFile();
+		csvFile.writeCSVFile("test", List);
+
+	}
 }
